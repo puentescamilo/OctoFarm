@@ -3,16 +3,20 @@ const mongoose = require('mongoose');
 const Logger = require('../handlers/logger');
 const { getPrinterStoreCache } = require('../cache/printer-store.cache');
 const { PRINTER_CATEGORIES } = require('./printers/constants/printer-categories.constants');
+const { PRINTER_TYPES } = require('./printers/constants/printer-types.constants');
 const { attachProfileToSpool } = require('../utils/spool.utils');
 const { LOGGER_ROUTE_KEYS } = require('../constants/logger.constants');
 const logger = new Logger(LOGGER_ROUTE_KEYS.SERVICE_VERSION_PATCHES);
 
 const patchPrinterValues = async (printer) => {
   patchSortIndex(printer);
-  printerURLPatch(printer);
-  printerHTTPPatch(printer);
-  printerURLTrailingSlashPatch(printer);
-  webSocketURLPatch(printer);
+  // URL patches only apply to OctoPrint printers
+  if (printer.printerType !== PRINTER_TYPES.BAMBU_LAB) {
+    printerURLPatch(printer);
+    printerHTTPPatch(printer);
+    printerURLTrailingSlashPatch(printer);
+    webSocketURLPatch(printer);
+  }
   selectedFilamentNotArrayPatch(printer);
   await collateSelectedFilament(printer);
   categoryPatch(printer);
@@ -21,8 +25,11 @@ const patchPrinterValues = async (printer) => {
 };
 
 const nameSearchPatch = (printer) => {
-  if (printer?.settingsAppearance?.name.length === 0) {
-    printer.settingsAppearance.name = 'Grabbing from OctoPrint...';
+  if (printer?.settingsAppearance?.name?.length === 0) {
+    const fallback = printer.printerType === PRINTER_TYPES.BAMBU_LAB
+      ? `Bambu ${printer.serialNumber || 'Lab Printer'}`
+      : 'Grabbing from OctoPrint...';
+    printer.settingsAppearance.name = fallback;
   }
 };
 

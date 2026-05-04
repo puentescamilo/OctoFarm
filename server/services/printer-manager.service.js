@@ -1,7 +1,7 @@
 const Logger = require('../handlers/logger.js');
 
 const PrinterService = require('./printer.service');
-const { OctoPrintPrinter } = require('../services/printers/create-octoprint.service');
+const { createPrinterInstance } = require('../services/printers/printer-factory.service');
 const { CATEGORIES } = require('./printers/constants/printer-state.constants');
 const { getPrinterStoreCache } = require('../cache/printer-store.cache');
 const { patchPrinterValues } = require('../services/version-patches.service');
@@ -38,7 +38,7 @@ class PrinterManagerService {
     //Parse out enabled printers and disable any disabled printers straight away...
     for (let p of pList) {
       await patchPrinterValues(p);
-      const printer = new OctoPrintPrinter(p);
+      const printer = createPrinterInstance(p);
       getPrinterStoreCache().addPrinter(printer);
       if (!printer?.disabled) {
         this.#enablePrintersQueue.push(printer._id);
@@ -70,7 +70,7 @@ class PrinterManagerService {
       printerValues = await PrinterService.create(printerValues);
     }
     await patchPrinterValues(printerValues);
-    const newPrinter = new OctoPrintPrinter(printerValues);
+    const newPrinter = createPrinterInstance(printerValues);
     getPrinterStoreCache().addPrinter(newPrinter);
     this.#enablePrintersQueue.push(newPrinter._id);
 

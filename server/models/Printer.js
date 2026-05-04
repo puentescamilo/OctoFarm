@@ -1,6 +1,13 @@
 const mongoose = require("mongoose");
+const { PRINTER_TYPES } = require("../services/printers/constants/printer-types.constants");
 
 const PrinterSchema = new mongoose.Schema({
+  printerType: {
+    type: String,
+    enum: Object.values(PRINTER_TYPES),
+    default: PRINTER_TYPES.OCTOPRINT,
+    required: true
+  },
   disabled: {
     type: Boolean,
     required: true,
@@ -8,7 +15,7 @@ const PrinterSchema = new mongoose.Schema({
   },
   apikey: {
     type: String,
-    required: true // !
+    required: function () { return this.printerType === PRINTER_TYPES.OCTOPRINT; }
   },
   camURL: {
     type: String,
@@ -16,7 +23,7 @@ const PrinterSchema = new mongoose.Schema({
   },
   printerURL: {
     type: String,
-    required: true // !
+    required: function () { return this.printerType === PRINTER_TYPES.OCTOPRINT; }
   },
   webSocketURL: {
     type: String,
@@ -91,11 +98,11 @@ const PrinterSchema = new mongoose.Schema({
   },
   octoPrintSystemInfo: {
     type: Object,
-    require: false
+    required: false
   },
   octoPi: {
     type: Object,
-    require: false
+    required: false
   },
   powerSettings: {
     type: Object,
@@ -240,6 +247,15 @@ const PrinterSchema = new mongoose.Schema({
   },
   quickConnectSettings: {
     type: Object,
+    required: false
+  },
+  // Bambu Lab fields
+  serialNumber: {
+    type: String,
+    required: false
+  },
+  accessCode: {
+    type: String,
     required: false
   }
 });

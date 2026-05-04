@@ -6,6 +6,8 @@ let newPrintersIndex = 0;
 
 // REFACTOR clean up this file is a mess jim
 
+const PRINTER_TYPES = { OCTOPRINT: "OCTOPRINT", BAMBU_LAB: "BAMBU_LAB" };
+
 class Printer {
   constructor(printerURL, camURL, apikey, group, name) {
     this.settingsAppearance = {
@@ -15,9 +17,27 @@ class Printer {
       name,
       showFahrenheitAlso: false,
     };
+    this.printerType = PRINTER_TYPES.OCTOPRINT;
     this.printerURL = printerURL;
     this.camURL = camURL;
     this.apikey = apikey;
+    this.group = group;
+  }
+}
+
+class BambuPrinter {
+  constructor(ip, serialNumber, accessCode, group, name) {
+    this.settingsAppearance = {
+      color: "default",
+      colorTransparent: false,
+      defaultLanguage: "_default",
+      name,
+      showFahrenheitAlso: false,
+    };
+    this.printerType = PRINTER_TYPES.BAMBU_LAB;
+    this.ip = ip;
+    this.serialNumber = serialNumber;
+    this.accessCode = accessCode;
     this.group = group;
   }
 }
@@ -71,24 +91,42 @@ export class PrintersManagement {
         `
         <tr id="newPrinterCard-${newPrintersIndex}">
         <td><div class="mb-0">
-          <input id="newPrinterName-${newPrintersIndex}" type="text" class="form-control" placeholder="Leave blank to grab from OctoPrint">
+          <select id="newPrinterType-${newPrintersIndex}" class="form-control">
+            <option value="${PRINTER_TYPES.OCTOPRINT}">OctoPrint</option>
+            <option value="${PRINTER_TYPES.BAMBU_LAB}">Bambu Lab</option>
+          </select>
+        </div></td>
+        <td><div class="mb-0">
+          <input id="newPrinterName-${newPrintersIndex}" type="text" class="form-control" placeholder="Leave blank to auto-detect">
           <small>Example: <code>My Awesome Printer Name</code></small>
         </div></td>
         <td><div class="mb-0">
           <input id="newPrinterGroup-${newPrintersIndex}" type="text" class="form-control" placeholder="">
           <small>Example: <code>Rack 1</code></small>
         </div></td>
-        <td><div class="mb-0">
+        <td class="op-fields-${newPrintersIndex}"><div class="mb-0">
           <input id="newPrinterURL-${newPrintersIndex}" type="text" class="form-control" placeholder="">
           <small>Example: <code>http://192.168.1.5:80</code></small>
         </div></td>
-        <td><div class="mb-0">
+        <td class="op-fields-${newPrintersIndex}"><div class="mb-0">
           <input id="newPrinterCamURL-${newPrintersIndex}" type="text" class="form-control" placeholder="Leave blank to grab from OctoPrint">
           <small>Example: <code>http://192.168.1.5/webcam/?action=stream</code></small>
         </div></td>
-        <td><div class="mb-0">
+        <td class="op-fields-${newPrintersIndex}"><div class="mb-0">
           <input id="newPrinterAPIKEY-${newPrintersIndex}" type="text" class="form-control" placeholder="">
           <small>OctoPrint Version 1.4.1+: <code>Must use generated User/Application Key</code></small>
+        </div></td>
+        <td class="bambu-fields-${newPrintersIndex}" style="display:none"><div class="mb-0">
+          <input id="newPrinterIP-${newPrintersIndex}" type="text" class="form-control" placeholder="e.g. 192.168.1.20">
+          <small>Printer IP address on LAN</small>
+        </div></td>
+        <td class="bambu-fields-${newPrintersIndex}" style="display:none"><div class="mb-0">
+          <input id="newPrinterSerial-${newPrintersIndex}" type="text" class="form-control" placeholder="15-character serial number">
+          <small>Found on the printer label</small>
+        </div></td>
+        <td class="bambu-fields-${newPrintersIndex}" style="display:none"><div class="mb-0">
+          <input id="newPrinterAccessCode-${newPrintersIndex}" type="text" class="form-control" placeholder="8-digit code">
+          <small>Settings → WLAN on printer screen. Requires <a href="https://wiki.bambulab.com/en/general/bbl-security" target="_blank">Developer Mode</a>.</small>
         </div></td>
         <td><button id="saveButton-${newPrintersIndex}" type="button" class="btn btn-success btn-sm">
                 <i class="fas fa-save"></i>
@@ -100,6 +138,20 @@ export class PrintersManagement {
     </tr>
   `
       );
+
+      // Toggle OctoPrint / Bambu fields when type selector changes
+      document
+        .getElementById(`newPrinterType-${newPrintersIndex}`)
+        .addEventListener("change", (e) => {
+          const idx = e.target.id.split("-")[1];
+          const isBambu = e.target.value === PRINTER_TYPES.BAMBU_LAB;
+          document.querySelectorAll(`.op-fields-${idx}`).forEach((el) => {
+            el.style.display = isBambu ? "none" : "";
+          });
+          document.querySelectorAll(`.bambu-fields-${idx}`).forEach((el) => {
+            el.style.display = isBambu ? "" : "none";
+          });
+        });
     }
     let currentIndex = JSON.parse(JSON.stringify(newPrintersIndex));
     document
@@ -209,61 +261,68 @@ export class PrintersManagement {
   }
 
   static async savePrinter(event) {
-    // Gather the printer data...
     let newId = event.id.split("-");
     newId = newId[1];
 
-    // Grab new printer cells...
-    const printerURL = document.getElementById(`newPrinterURL-${newId}`);
-    const printerCamURL = document.getElementById(`newPrinterCamURL-${newId}`);
-    const printerAPIKEY = document.getElementById(`newPrinterAPIKEY-${newId}`);
-    const printerGroup = document.getElementById(`newPrinterGroup-${newId}`);
+    const printerTypeEl = document.getElementById(`newPrinterType-${newId}`);
     const printerName = document.getElementById(`newPrinterName-${newId}`);
+    const printerGroup = document.getElementById(`newPrinterGroup-${newId}`);
+    const printerType = printerTypeEl ? printerTypeEl.value : PRINTER_TYPES.OCTOPRINT;
 
     const errors = [];
-    let printCheck = -1;
-    if (printerURL.value !== "") {
-      const printerInfo = await OctoFarmClient.listPrinters();
-      printCheck = _.findIndex(printerInfo, function (o) {
-        return (
-          JSON.stringify(o.printerURL) === JSON.stringify(printerURL.value)
+
+    if (printerName.value.length > 50) {
+      errors.push({ type: "warning", msg: "Printer names must be less than 50 characters" });
+    }
+
+    let printerPayload;
+
+    if (printerType === PRINTER_TYPES.BAMBU_LAB) {
+      const ip = document.getElementById(`newPrinterIP-${newId}`);
+      const serial = document.getElementById(`newPrinterSerial-${newId}`);
+      const accessCode = document.getElementById(`newPrinterAccessCode-${newId}`);
+
+      if (!ip || ip.value === "") errors.push({ type: "warning", msg: "Please input the Bambu printer IP address" });
+      if (!serial || serial.value.length !== 15) errors.push({ type: "warning", msg: "Serial number must be exactly 15 characters" });
+      if (!accessCode || accessCode.value.length !== 8) errors.push({ type: "warning", msg: "Access Code must be exactly 8 characters" });
+
+      if (errors.length === 0) {
+        printerPayload = new BambuPrinter(
+          ip.value,
+          serial.value,
+          accessCode.value,
+          printerGroup.value,
+          printerName.value
         );
-      });
-    }
-    // Check information is filled correctly...
-    if (
-      printerURL.value === "" ||
-      printCheck > -1 ||
-      printerAPIKEY.value === "" ||
-      printerName.value === "" ||
-      printerCamURL.value === "" ||
-      printerName.value.length > 50
-    ) {
-      if (printerURL.value === "") {
-        errors.push({
-          type: "warning",
-          msg: "Please input your printers URL",
+      }
+    } else {
+      const printerURL = document.getElementById(`newPrinterURL-${newId}`);
+      const printerCamURL = document.getElementById(`newPrinterCamURL-${newId}`);
+      const printerAPIKEY = document.getElementById(`newPrinterAPIKEY-${newId}`);
+
+      let printCheck = -1;
+      if (printerURL.value !== "") {
+        const printerInfo = await OctoFarmClient.listPrinters();
+        printCheck = _.findIndex(printerInfo, function (o) {
+          return JSON.stringify(o.printerURL) === JSON.stringify(printerURL.value);
         });
       }
-      if (printerAPIKEY.value === "") {
-        errors.push({
-          type: "warning",
-          msg: "Please input your printers API Key",
-        });
-      }
-      if (printerName.value.length > 50) {
-        errors.push({
-          type: "warning",
-          msg: "Printer names must be less than 50 characters",
-        });
-      }
-      if (printCheck > -1) {
-        errors.push({
-          type: "error",
-          msg: `Printer URL: ${printerURL.value} already exists on farm`,
-        });
+
+      if (printerURL.value === "") errors.push({ type: "warning", msg: "Please input your printers URL" });
+      if (printerAPIKEY.value === "") errors.push({ type: "warning", msg: "Please input your printers API Key" });
+      if (printCheck > -1) errors.push({ type: "error", msg: `Printer URL: ${printerURL.value} already exists on farm` });
+
+      if (errors.length === 0) {
+        printerPayload = new PrintersManagement(
+          printerURL.value,
+          printerCamURL.value,
+          printerAPIKEY.value,
+          printerGroup.value,
+          printerName.value
+        ).build();
       }
     }
+
     if (errors.length > 0) {
       errors.forEach((error) => {
         UI.createAlert(error.type, error.msg, 3000, "clicked");
@@ -273,22 +332,11 @@ export class PrintersManagement {
       saveButton.innerHTML = "<i class=\"fas fa-spinner fa-spin\"></i>";
       saveButton.disabled = true;
 
-      const printer = new PrintersManagement(
-        printerURL.value,
-        printerCamURL.value,
-        printerAPIKEY.value,
-        printerGroup.value,
-        printerName.value
-      ).build();
-      const printersToAdd = await OctoFarmClient.post("printers/add", printer);
+      const printersToAdd = await OctoFarmClient.post("printers/add", printerPayload);
       const { printersAdded } = printersToAdd;
       printersAdded.forEach((p) => {
-        UI.createAlert(
-          "success",
-          `Printer: ${p.printerURL} has successfully been added to the farm...`,
-          500,
-          "Clicked"
-        );
+        const label = p.printerURL || p.ip || "Bambu printer";
+        UI.createAlert("success", `Printer: ${label} has successfully been added to the farm...`, 500, "Clicked");
       });
       event.parentElement.parentElement.parentElement.remove();
       saveButton.innerHTML = "<i class=\"fas fa-save\"></i>";

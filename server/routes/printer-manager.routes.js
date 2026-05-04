@@ -18,6 +18,7 @@ const { getPluginList, getPluginNoticesList } = require("../store/octoprint-plug
 const { generatePrinterStatistics } = require("../services/printer-statistics.service");
 const { validateBodyMiddleware, validateParamsMiddleware } = require("../middleware/validators");
 const P_VALID = require("../constants/validate-printers.constants");
+const { PRINTER_TYPES } = require("../services/printers/constants/printer-types.constants");
 const M_VALID = require("../constants/validate-mongo.constants");
 const { sortBy } = require("lodash");
 const ConnectionMonitorService = require("../services/connection-monitor.service");
@@ -25,18 +26,23 @@ const { generateRandomName } = require("../services/printer-name-generator.servi
 const { getEventEmitterCache } = require("../cache/event-emitter.cache");
 const { updateUserActionLog } = require("../services/user-actions-log.service");
 
+function validateNewPrinterByType(req, res, next) {
+  const rules =
+    req.body?.printerType === PRINTER_TYPES.BAMBU_LAB
+      ? P_VALID.NEW_BAMBU_PRINTER
+      : P_VALID.NEW_PRINTER;
+  return validateBodyMiddleware(rules)(req, res, next);
+}
+
 router.post(
   "/add",
   ensureAuthenticated,
   ensureAdministrator,
-  validateBodyMiddleware(P_VALID.NEW_PRINTER),
+  validateNewPrinterByType,
   async (req, res) => {
-    // Grab the API body
     const printers = req.body;
-    // Send Dashboard to Runner..
     logger.info("Add printers request: ", printers);
     const p = await getPrinterManagerCache().addPrinter(printers);
-    //Return printers added...
     res.send({ printersAdded: [p], status: 200 });
   }
 );

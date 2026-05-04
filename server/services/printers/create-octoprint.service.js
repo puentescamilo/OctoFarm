@@ -4,6 +4,8 @@ const {
   tempTriggersDefaults,
   ALLOWED_SYSTEM_CHECKS,
 } = require('./constants/printer-defaults.constants');
+const { PrinterAdapter } = require('./printer-adapter.interface');
+const { PRINTER_TYPES } = require('./constants/printer-types.constants');
 const { PRINTER_STATES, CATEGORIES } = require('./constants/printer-state.constants');
 const { OctoprintApiClientService } = require('../octoprint/octoprint-api-client.service');
 const { SettingsClean } = require('../settings-cleaner.service');
@@ -39,7 +41,7 @@ const { LOGGER_ROUTE_KEYS } = require('../../constants/logger.constants');
 const { FilamentClean } = require('../filament-cleaner.service');
 const logger = new Logger(LOGGER_ROUTE_KEYS.SERVICE_OCTOPRINT);
 
-class OctoPrintPrinter {
+class OctoPrintPrinter extends PrinterAdapter {
   //OctoFarm state
   disabled = false;
   display = true;
@@ -190,6 +192,7 @@ class OctoPrintPrinter {
   websocket_throttle = 1;
 
   constructor(printer) {
+    super();
     if (
       Number.isNaN(printer?.sortIndex) ||
       !printer?.apikey ||
@@ -1841,6 +1844,18 @@ class OctoPrintPrinter {
 
   clearSelectedSpools() {
     FilamentClean.removeSelectedSpoolsFromList(this.selectedFilament);
+  }
+
+  get printerType() {
+    return PRINTER_TYPES.OCTOPRINT;
+  }
+
+  async refreshState() {
+    return this.acquireOctoPrintLatestSettings();
+  }
+
+  async refreshFiles() {
+    return this.acquireOctoPrintFilesData(true, true);
   }
 }
 

@@ -17,6 +17,13 @@ module.exports = {
     apikey: ["required", "string", API_MIN_LENGTH, API_MAX_LENGTH],
     group: ["string", MIN_LENGTH_0, STRING_MAX_LENGTH]
   },
+  NEW_BAMBU_PRINTER: {
+    settingsAppearance: "settings_appearance",
+    ip: ["required", "string"],
+    serialNumber: ["required", "string", "minLength:15", "maxLength:15"],
+    accessCode: ["required", "string", "minLength:8", "maxLength:8"],
+    group: ["string", MIN_LENGTH_0, STRING_MAX_LENGTH]
+  },
   PRINTER_ID_LIST: {
     idList: ["required", "array", MIN_LENGTH_0], //INVESTIGATE why max length doesn't work here!?
     "idList.*": ["required", "string", "mongoose_object_id"]
