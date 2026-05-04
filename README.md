@@ -16,7 +16,7 @@
   </a>
 
   <p align="center">
-    OctoFarm is a single pane of glass that combines multiple OctoPrint instances into a single interface. It utilises the OctoPrint API and websocket systems to monitor and allow management of your 3d printer farm. <br/>
+    OctoFarm is a single pane of glass that combines multiple 3D printer instances into a single interface. It supports OctoPrint (via REST API and WebSocket) and Bambu Lab printers (via MQTT over LAN) to monitor and manage your 3D printer farm. <br/>
   </p>
 
   <p align="center">
@@ -45,14 +45,13 @@
 
 ![OctoFarm Dashboard][DashboardScreenshot]
 
-OctoFarm was built to fill a need that anyone with multiple 3D printers with Octoprint will have run into. How do I
-manage multiple printers from one place? That's where OctoFarm steps in, add your OctoPrint instances to the system and
-it will scan and keep you up to date on the status of your printers.
+OctoFarm was built to fill a need that anyone with multiple 3D printers will have run into. How do I manage multiple printers from one place? That's where OctoFarm steps in — add your printers to the system and it will keep you up to date on the status of your entire farm.
 
-Built by a maker, for makers to get more out of their OctoPrint run farms.
+Built by a maker, for makers to get more out of their printer farms.
 
-- Manager your OctoPrint instances right down to triggering Updates and Plugin installs.
-- Keep a track of all the live data on your farm with a selection of views.
+- **OctoPrint**: manage instances right down to triggering updates and plugin installs.
+- **Bambu Lab** *(MVP)*: connect to X1C, P1S, P1P, A1 and A1 Mini via MQTT over LAN — live temperatures, print progress, layer tracking and pause/resume/stop controls. Requires [Developer Mode](https://wiki.bambulab.com/en/general/bbl-security) enabled on the printer.
+- Keep track of all live data on your farm with a selection of views.
 - Manage your OctoPrint file system.
 - Get an overview of your farm with the customisable dashboard.
 - Manage and track filament on your farm.
@@ -83,17 +82,16 @@ Check out the OctoFarm documentation website for installation instructions on va
 ## Installation Development
 ### Requirements
 - Git
-- NodeJS > v14
+- NodeJS >= v20
 - npm
 
-
-1. Clone the OctoFarm
+1. Clone OctoFarm
 
 ```sh
-git clone https://github.com/NotExpectedYet/OctoFarm.git
+git clone https://github.com/puentescamilo/OctoFarm.git
 ```
 
-2. Install the mono-repo eslint dependencies (eslint, prettier and nodemon)
+2. Install mono-repo dev tooling (eslint, prettier, nodemon)
 
 ```sh
 npm install
@@ -105,20 +103,22 @@ npm install
 npm run setup-dev
 ```
 
-4. Create an `.env` file in the OctoFarm folder's root directory. e.g. `OctoFarm/.env`.
-   Paste in the contents below.
+4. Create an `.env` file in the root directory (`OctoFarm/.env`):
+
 ```dotenv
 NODE_ENV=development
 MONGO=mongodb://127.0.0.1:27017/octofarm
 OCTOFARM_PORT=4000
 ```
 
-5. Build the latest client
+5. Build the client
+
 ```sh
 npm run build-client
 ```
 
-6. (Optional): Watch for client changes, requires a secondary console.
+6. (Optional) Watch for client changes in a secondary terminal:
+
 ```sh
 npm run dev-client
 ```
@@ -126,9 +126,22 @@ npm run dev-client
 7. Start the server
 
 ```sh
-npm run server-dev
+npm run dev-server
 ```
-- The developer version uses nodemon for live server reloading on changes. It will output all the logs to the console.
+
+The dev server uses nodemon for live reloading and outputs all logs to the console.
+
+### Adding a Bambu Lab printer
+
+OctoFarm can connect to Bambu Lab printers over your local network without going through Bambu's cloud. Before adding one:
+
+1. On the printer: **Settings → General → Developer Mode → Enable**.
+2. Note the printer's **IP address**, **Serial Number** (15 chars, on the label) and **Access Code** (8 digits, Settings → WLAN).
+3. In OctoFarm, open **Printer Management → Add Printer**, select **Bambu Lab** as the printer type, and fill in those three values.
+
+> **Firmware note:** the Developer Mode requirement was introduced in the January 2025 firmware update (X1 ≥ 01.08.03, equivalent versions for P1/A1 series). Printers on older firmware do not need Developer Mode but may have limited LAN API support.
+
+**Current MVP capabilities:** live temperatures, print progress, layer counter, job name, HMS error codes, and pause/resume/stop controls. File upload, AMS status and camera feed are planned for a future release.
 
 ## Contributing
 
