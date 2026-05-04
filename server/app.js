@@ -5,7 +5,7 @@ try {
   // We dont abort on parsing failures
 }
 
-if (!!majorVersion && majorVersion < 14) {
+if (!!majorVersion && majorVersion < 20) {
   // Dont require this in the normal flow (or NODE_ENV can not be fixed before start)
   const { serveNodeVersionFallback, setupFallbackExpressServer } = require("./app-fallbacks");
 
@@ -41,10 +41,10 @@ if (!!majorVersion && majorVersion < 14) {
 
   const octoFarmServer = setupExpressServer();
 
+  mongoose.set("strictQuery", true);
+
   mongoose
     .connect(fetchMongoDBConnectionString(), {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
       serverSelectionTimeoutMS: 2500
     })
     .then(async (mg) => {

@@ -1,5 +1,4 @@
 const { findIndex } = require('lodash');
-const fetch = require('node-fetch');
 const fs = require('fs');
 const History = require('../models/History.js');
 const Logger = require('../handlers/logger.js');

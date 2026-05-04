@@ -1,49 +1,27 @@
 const LocalStrategy = require("passport-local").Strategy;
 const bcrypt = require("bcryptjs");
-const RememberMeStrategy = require("passport-remember-me").Strategy;
 const User = require("../models/User.js");
-const { UserTokenService } = require("../services/authentication/user-token.service");
 const { LOGGER_ROUTE_KEYS } = require("../constants/logger.constants");
 const Logger = require("../handlers/logger");
 const logger = new Logger(LOGGER_ROUTE_KEYS.MIDDLEWARE_PASSPORT);
 
 module.exports = function (passport) {
   passport.use(
-    new RememberMeStrategy(async function (token, done) {
-      await UserTokenService.popRememberMeTokenWithDone(token, function (uid) {
-        if (!uid) {
-          return done(null, uid);
+    new LocalStrategy({ usernameField: "username" }, async (username, password, done) => {
+      try {
+        const user = await User.findOne({ username });
+        if (!user) {
+          return done(null, false, { message: "That username is not registered" });
         }
-        User.findById(uid, (err, user) => {
-          if (err) {
-            return done(err);
-          }
-          return done(null, user || false);
+        bcrypt.compare(password, user.password, (err, isMatch) => {
+          if (err) return done(err);
+          if (isMatch) return done(null, user);
+          return done(null, false, { message: "Password incorrect" });
         });
-      });
-    }, UserTokenService.issueTokenWithDone)
-  );
-
-  passport.use(
-    new LocalStrategy({ usernameField: "username" }, (username, password, done) => {
-      // Match User in db
-      User.findOne({ username })
-        .then((user) => {
-          if (!user) {
-            return done(null, false, {
-              message: "That username is not registered"
-            });
-          }
-          // Match password
-          bcrypt.compare(password, user.password, (err, isMatch) => {
-            if (err) throw err;
-            if (isMatch) {
-              return done(null, user);
-            }
-            return done(null, false, { message: "Password incorrect" });
-          });
-        })
-        .catch((err) => logger.error(err));
+      } catch (err) {
+        logger.error(err);
+        return done(err);
+      }
     })
   );
 
@@ -51,9 +29,12 @@ module.exports = function (passport) {
     done(null, user.id);
   });
 
-  passport.deserializeUser((id, done) => {
-    User.findById(id, (err, user) => {
-      done(err, user);
-    });
+  passport.deserializeUser(async (id, done) => {
+    try {
+      const user = await User.findById(id);
+      done(null, user);
+    } catch (err) {
+      done(err);
+    }
   });
 };

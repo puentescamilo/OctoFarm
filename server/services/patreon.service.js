@@ -1,4 +1,3 @@
-const fetch = require("node-fetch");
 let patreonData = require("../constants/patreon.constants");
 const Logger = require("../handlers/logger");
 const { LOGGER_ROUTE_KEYS } = require("../constants/logger.constants");

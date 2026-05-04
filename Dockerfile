@@ -1,11 +1,6 @@
-# https://pkgs.alpinelinux.org/packages?name=nodejs&branch=v3.13
-# Results in NodeJS 14.17.0
-FROM alpine:3.14 as base
+FROM node:20-alpine AS base
 
-RUN apk add --no-cache --virtual .base-deps \
-    nodejs \
-    npm \
-    tini
+RUN apk add --no-cache tini
 
 ENV NODE_ENV=production
 

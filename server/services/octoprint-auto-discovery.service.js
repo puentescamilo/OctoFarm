@@ -1,5 +1,4 @@
 const ssdp = require("node-upnp-ssdp");
-const fetch = require("node-fetch");
 const parseString = require("xml2js").parseString;
 const Logger = require("../handlers/logger.js");
 const { LOGGER_ROUTE_KEYS } = require("../constants/logger.constants");

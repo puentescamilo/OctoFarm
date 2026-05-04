@@ -89,7 +89,7 @@ async function createUser({
   } catch (e) {
     createdNewUser = false;
     errors.push({ msg: "Failed to save new user: " + e });
-    ClientSettings.findByIdAndRemove(userSettings._id);
+    ClientSettings.findByIdAndDelete(userSettings._id);
   }
   if (errors.length === 0) {
     try {

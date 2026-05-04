@@ -1,6 +1,5 @@
-const fetch = require("node-fetch");
+const { Readable } = require("stream");
 const fs = require("fs");
-const request = require("request");
 
 const downloadFromOctoPrint = async (url, path, apiKey, deleteTimelapse) => {
   const res = await fetch(url, {
@@ -10,10 +9,15 @@ const downloadFromOctoPrint = async (url, path, apiKey, deleteTimelapse) => {
       "X-Api-Key": apiKey
     }
   });
+
   const fileStream = fs.createWriteStream(path);
+  const nodeStream = Readable.fromWeb
+    ? Readable.fromWeb(res.body)
+    : Readable.from(res.body);
+
   await new Promise((resolve, reject) => {
-    res.body.pipe(fileStream);
-    res.body.on("error", reject);
+    nodeStream.pipe(fileStream);
+    nodeStream.on("error", reject);
     fileStream.on("close", async () => {
       resolve();
       if (!!deleteTimelapse) {
@@ -24,10 +28,25 @@ const downloadFromOctoPrint = async (url, path, apiKey, deleteTimelapse) => {
 };
 
 const downloadImage = async (url, path, apiKey, callback) => {
-  return request.head(url, (err, res) => {
-    res.headers["content-type"] = "image/png";
-    res.headers["x-api-key"] = apiKey;
-    request(url).pipe(fs.createWriteStream(path)).on("close", callback);
+  const res = await fetch(url, {
+    method: "GET",
+    headers: {
+      "X-Api-Key": apiKey
+    }
+  });
+
+  const fileStream = fs.createWriteStream(path);
+  const nodeStream = Readable.fromWeb
+    ? Readable.fromWeb(res.body)
+    : Readable.from(res.body);
+
+  await new Promise((resolve, reject) => {
+    nodeStream.pipe(fileStream);
+    nodeStream.on("error", reject);
+    fileStream.on("close", () => {
+      resolve();
+      if (typeof callback === "function") callback();
+    });
   });
 };
 

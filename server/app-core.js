@@ -45,7 +45,6 @@ function setupExpressServer() {
 
   // Helmet middleware. Anymore and would require customising by the user...
   app.use(helmet.dnsPrefetchControl());
-  app.use(helmet.expectCt());
   app.use(helmet.hidePoweredBy());
   app.use(helmet.hsts());
   app.use(helmet.ieNoOpen());
@@ -53,7 +52,6 @@ function setupExpressServer() {
   app.use(helmet.originAgentCluster());
   app.use(helmet.permittedCrossDomainPolicies());
   app.use(helmet.referrerPolicy());
-  app.use(helmet.xssFilter());
 
   app.use(express.json());
 
@@ -87,7 +85,6 @@ function setupExpressServer() {
   );
   app.use(passport.initialize());
   app.use(passport.session());
-  app.use(passport.authenticate('remember-me')); // Remember Me!
 
   app.use(flash());
   app.use((req, res, next) => {

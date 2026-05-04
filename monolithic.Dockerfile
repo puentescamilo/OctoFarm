@@ -1,4 +1,4 @@
-FROM node:14.16-stretch
+FROM node:20-bookworm
 
 # Update Local Repository Index
 RUN apt-get update
@@ -7,9 +7,9 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get dist-upgrade -yq
 # Install package utils
 RUN DEBIAN_FRONT=noninteractive apt-get install -yq apt-utils
 # Install MongoDB
-RUN DEBIAN_FRONT=noninteractive apt-get install -yq ca-certificates
-RUN wget -qO - https://www.mongodb.org/static/pgp/server-4.4.asc | apt-key add
-RUN echo 'deb http://repo.mongodb.org/apt/debian stretch/mongodb-org/4.4 main' | tee /etc/apt/sources.list.d/mongodb.list
+RUN DEBIAN_FRONT=noninteractive apt-get install -yq ca-certificates gnupg curl
+RUN curl -fsSL https://www.mongodb.org/static/pgp/server-7.0.asc | gpg --dearmor -o /usr/share/keyrings/mongodb-server-7.0.gpg
+RUN echo 'deb [ signed-by=/usr/share/keyrings/mongodb-server-7.0.gpg ] http://repo.mongodb.org/apt/debian bookworm/mongodb-org/7.0 main' | tee /etc/apt/sources.list.d/mongodb.list
 RUN apt-get update
 RUN DEBIAN_FRONTEND=noninteractive apt-get install -yq mongodb-org
 

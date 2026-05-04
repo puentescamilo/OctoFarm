@@ -370,13 +370,12 @@ router.get(
   validateParamsMiddleware(M_VALID.MONGO_ID),
   async (req, res) => {
     const scriptId = req.paramString('id');
-    GcodeDB.findByIdAndDelete(scriptId, function (err) {
-      if (err) {
-        res.send(err);
-      } else {
-        res.send(scriptId);
-      }
-    });
+    try {
+      await GcodeDB.findByIdAndDelete(scriptId);
+      res.send(scriptId);
+    } catch (err) {
+      res.send(err);
+    }
   }
 );
 router.post('/customGcode/edit', ensureAuthenticated, async (req, res) => {

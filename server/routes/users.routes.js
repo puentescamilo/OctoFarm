@@ -8,7 +8,6 @@ const { SettingsClean } = require("../services/settings-cleaner.service");
 const ServerSettingsDB = require("../models/ServerSettings.js");
 
 const User = require("../models/User.js");
-const { UserTokenService } = require("../services/authentication/user-token.service");
 const { ensureAuthenticated, ensureAdministrator } = require("../middleware/auth");
 const {
   fetchUsers,
@@ -38,36 +37,10 @@ router.get("/login", async (_req, res) => {
 router.post(
   "/login",
   passport.authenticate("local", {
-    // Dont add or we wont reach remember_me cookie successRedirect: "/dashboard",
+    successRedirect: "/dashboard",
     failureRedirect: "/users/login",
     failureFlash: true
-  }),
-  async function (req, res, next) {
-    const prevSession = req.session;
-    req.session.regenerate((err) => {
-      logger.error("Unable to regenerate session!", err);
-      Object.assign(req.session, prevSession);
-    });
-
-    if (!req.body.remember_me) {
-      return next();
-    }
-    await UserTokenService.issueTokenWithDone(req.user, function (err, token) {
-      if (err) {
-        return next(err);
-      }
-
-      res.cookie("remember_me", token, {
-        path: "/",
-        httpOnly: true,
-        maxAge: 604800000
-      });
-      return next();
-    });
-  },
-  (_req, res) => {
-    res.redirect("/dashboard");
-  }
+  })
 );
 
 // Register Page
@@ -201,10 +174,12 @@ router.post("/register", async (req, res) => {
 });
 
 // Logout Handle
-router.get("/logout", (req, res) => {
-  req.logout();
-  req.flash("success_msg", "You are logged out");
-  res.redirect("/users/login");
+router.get("/logout", (req, res, next) => {
+  req.logout((err) => {
+    if (err) return next(err);
+    req.flash("success_msg", "You are logged out");
+    res.redirect("/users/login");
+  });
 });
 
 // Get user list

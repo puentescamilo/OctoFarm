@@ -62,7 +62,7 @@ function fetchOctoFarmPort() {
 function serveNodeVersionFallback(app) {
   const port = fetchOctoFarmPort();
   let listenerHttpServer = app.listen(port, "0.0.0.0", () => {
-    const msg = `You have an old Node version: ${process.version}. This needs to be version 14.x or higher... open our webpage at http://127.0.0.1:${port} for tips`;
+    const msg = `You have an old Node version: ${process.version}. This needs to be version 20.x or higher... open our webpage at http://127.0.0.1:${port} for tips`;
     logger.info(msg);
   });
 

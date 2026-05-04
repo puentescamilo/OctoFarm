@@ -583,7 +583,7 @@ const generateDashboardStatistics = async () => {
   RoomData.find({})
     .sort({ _id: -1 })
     .limit(500)
-    .exec(function (err, posts) {
+    .then((posts) => {
       const currentEnviromentalData = [
         {
           name: "Temperature",

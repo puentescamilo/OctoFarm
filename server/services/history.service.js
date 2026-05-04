@@ -13,9 +13,8 @@ const {
 async function find(input = defaultInputFilters, options = defaultPaginationOptions) {
   //Merge in the custom labels used
   options = { ...options, ...{ customLabels: myCustomLabels } };
-  return historyModel.paginate(input, options, function (err, result) {
-    return { itemList: result.docs, pagination: result.paginator };
-  });
+  const result = await historyModel.paginate(input, options);
+  return { itemList: result.docs, pagination: result.paginator };
 }
 
 /**

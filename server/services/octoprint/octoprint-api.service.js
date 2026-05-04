@@ -1,6 +1,5 @@
 "use strict";
 
-const fetch = require("node-fetch");
 const Logger = require("../../handlers/logger.js");
 const { LOGGER_ROUTE_KEYS } = require("../../constants/logger.constants");
 const logger = new Logger(LOGGER_ROUTE_KEYS.OP_SERVICE_API);

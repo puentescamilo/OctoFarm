@@ -1,4 +1,3 @@
-const fetch = require('node-fetch');
 const { LOGGER_ROUTE_KEYS } = require('../constants/logger.constants');
 const Logger = require('../handlers/logger');
 const logger = new Logger(LOGGER_ROUTE_KEYS.OP_STORE_PLUGIN_LIST);
